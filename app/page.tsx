@@ -1,6 +1,7 @@
-"use client"
+"use client";
+
 import { useState } from "react";
-import { QRCodeCanvas } from "qrcode.react";
+import QRCode from "react-qr-code";
 
 const Home: React.FC = () => {
   const [texto, setTexto] = useState<string>("");
@@ -8,13 +9,26 @@ const Home: React.FC = () => {
 
   // Función para descargar el código QR como imagen
   const descargarQRCode = (): void => {
-    const canvas = document.querySelector("canvas");
-    if (canvas) {
-      const url = canvas.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = "codigo_qr.png";
-      link.click();
+    const svg = document.querySelector("svg");
+    if (svg) {
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+
+      const img = new Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        if (ctx) {
+          ctx.drawImage(img, 0, 0);
+          const url = canvas.toDataURL("image/png");
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = "codigo_qr.png";
+          link.click();
+        }
+      };
+      img.src = `data:image/svg+xml;base64,${btoa(svgData)}`;
     }
   };
 
@@ -25,14 +39,13 @@ const Home: React.FC = () => {
 
   return (
     <div style={{ textAlign: "center", marginTop: "150px" }}>
-      {/* <h1>Generador de Códigos QR</h1> */}
       <input
         type="text"
         value={texto}
         onChange={(e) => {
-          let value = e.target.value.replace(/[^0-9]/g, ''); // Remove non-numeric characters
+          let value = e.target.value.replace(/[^0-9]/g, ""); // Solo permite números
           if (value.length > 12) {
-        value = value.slice(0, 12) + '-' + value.slice(12, 14);
+            value = value.slice(0, 12) + "-" + value.slice(12, 14);
           }
           setTexto(value);
         }}
@@ -70,11 +83,11 @@ const Home: React.FC = () => {
         }}
       >
         {mostrarQR && texto && (
-          <QRCodeCanvas
-        value={texto}
-        size={250}
-        level="H"
-        includeMargin={true}
+          <QRCode
+            value={texto}
+            size={250}
+            level="H"
+            style={{ backgroundColor: "white", padding: "10px" }}
           />
         )}
       </div>
