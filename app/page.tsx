@@ -33,12 +33,24 @@ const Home: React.FC = () => {
     }
   };
 
+  // Función para formatear el número de carnet
+  const formatearCarnet = (carnet: string): string => {
+    const carnetLimpio = carnet.trim();
+    if (carnetLimpio.length >= 2) {
+      const base = carnetLimpio.slice(0, -2);
+      const sufijo = carnetLimpio.slice(-2);
+      return `${base}-${sufijo}`;
+    }
+    return carnetLimpio;
+  };
+
   // Función para generar los códigos QR
   const generarQRCode = (): void => {
     const carnetsList = texto
       .split(/[\n]/)
       .map(item => item.trim())
-      .filter(item => item.length > 0 && /^\d+$/.test(item));
+      .filter(item => item.length > 0 && /^\d+$/.test(item))
+      .map(formatearCarnet);
     
     setCarnets(carnetsList);
     setMostrarQR(true);
