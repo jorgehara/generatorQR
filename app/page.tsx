@@ -5,11 +5,12 @@ import QRCode from "react-qr-code";
 
 const Home: React.FC = () => {
   const [texto, setTexto] = useState<string>("");
+  const [carnets, setCarnets] = useState<string[]>([]);
   const [mostrarQR, setMostrarQR] = useState<boolean>(false);
 
   // Función para descargar el código QR como imagen
-  const descargarQRCode = (): void => {
-    const svg = document.querySelector("svg");
+  const descargarQRCode = (carnet: string, index: number): void => {
+    const svg = document.querySelectorAll("svg")[index];
     if (svg) {
       const svgData = new XMLSerializer().serializeToString(svg);
       const canvas = document.createElement("canvas");
@@ -24,7 +25,7 @@ const Home: React.FC = () => {
           const url = canvas.toDataURL("image/png");
           const link = document.createElement("a");
           link.href = url;
-          link.download = "codigo_qr.png";
+          link.download = `codigo_qr_${carnet}.png`;
           link.click();
         }
       };
@@ -32,81 +33,83 @@ const Home: React.FC = () => {
     }
   };
 
-  // Función para generar el código QR
+  // Función para generar los códigos QR
   const generarQRCode = (): void => {
+    const carnetsList = texto
+      .split(/[\n]/)
+      .map(item => item.trim())
+      .filter(item => item.length > 0 && /^\d+$/.test(item));
+    
+    setCarnets(carnetsList);
     setMostrarQR(true);
   };
 
+  // Función para procesar el texto pegado
+  const procesarTextoPegado = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    const textoPegado = e.clipboardData.getData("text");
+    setTexto(textoPegado);
+  };
+
+  // Función para descargar todos los QR
+  const descargarTodosQR = () => {
+    carnets.forEach((carnet, index) => {
+      setTimeout(() => {
+        descargarQRCode(carnet, index);
+      }, index * 500); // Añade un delay para evitar problemas con muchas descargas simultáneas
+    });
+  };
+
   return (
-    <div style={{ textAlign: "center", marginTop: "150px" }}>
-      <input
-        type="text"
-        value={texto}
-        onChange={(e) => {
-          let value = e.target.value.replace(/[^0-9]/g, ""); // Solo permite números
-          if (value.length > 12) {
-            value = value.slice(0, 12) + "-" + value.slice(12, 14);
-          }
-          setTexto(value);
-        }}
-        placeholder="Ingresa el texto o enlace"
-        style={{
-          padding: "10px",
-          width: "450px",
-          marginBottom: "20px",
-          borderRadius: "5px",
-          border: "1px solid #ccc",
-          color: "#333",
-          fontSize: "32px",
-        }}
-      />
-      <button
-        onClick={generarQRCode}
-        style={{
-          marginTop: "20px",
-          padding: "10px 20px",
-          backgroundColor: "#007bff",
-          color: "white",
-          border: "none",
-          borderRadius: "5px",
-          cursor: "pointer",
-        }}
-      >
-        Generar QR
-      </button>
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "center",
-          alignItems: "center",
-          marginTop: "20px",
-        }}
-      >
-        {mostrarQR && texto && (
-          <QRCode
+    <div className="container mx-auto p-4">
+      <div className="flex flex-col items-center mb-8">
+        <div className="w-full max-w-xl">
+          <textarea
             value={texto}
-            size={250}
-            level="H"
-            style={{ backgroundColor: "white", padding: "10px" }}
+            onChange={(e) => setTexto(e.target.value)}
+            onPaste={procesarTextoPegado}
+            placeholder="Pega aquí la lista de carnets"
+            className="w-full p-4 border rounded-lg text-lg mb-4 font-mono bg-black text-white"
+            rows={10}
           />
-        )}
+          <div className="flex gap-4">
+            <button
+              onClick={generarQRCode}
+              className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600"
+            >
+              Generar QR
+            </button>
+            {mostrarQR && carnets.length > 0 && (
+              <button
+                onClick={descargarTodosQR}
+                className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600"
+              >
+                Descargar Todos
+              </button>
+            )}
+          </div>
+        </div>
       </div>
-      {mostrarQR && texto && (
-        <button
-          onClick={descargarQRCode}
-          style={{
-            marginTop: "20px",
-            padding: "10px 20px",
-            backgroundColor: "#007bff",
-            color: "white",
-            border: "none",
-            borderRadius: "5px",
-            cursor: "pointer",
-          }}
-        >
-          Descargar QR
-        </button>
-      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {mostrarQR && carnets.map((carnet, index) => (
+          <div key={index} className="flex flex-col items-center p-4 border rounded-lg bg-black">
+            <p className="text-white mb-4 font-mono text-2xl">{carnet}</p>
+            <QRCode
+              value={carnet}
+              size={100}
+              level="H"
+              style={{ backgroundColor: "white", padding: "10px" }}
+            />
+            <button
+              onClick={() => descargarQRCode(carnet, index)}
+              className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            >
+              Descargar QR
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
