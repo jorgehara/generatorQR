@@ -103,10 +103,10 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {mostrarQR && carnets.map((carnet, index) => (
           <div key={index} className="flex flex-col items-center p-4 border rounded-lg bg-black">
-            <p className="text-white mb-4 font-mono text-2xl">{carnet}</p>
+            <p className="text-white mb-2 font-mono text-2xl">{carnet}</p>
             <QRCode
               value={carnet}
               size={100}
