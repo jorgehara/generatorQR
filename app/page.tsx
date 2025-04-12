@@ -5,10 +5,10 @@ import QRCode from "react-qr-code";
 
 const Home: React.FC = () => {
   const [texto, setTexto] = useState<string>("");
-  const [carnets, setCarnets] = useState<string[]>([]);
+  const [carnets, setCarnets] = useState<{ carnet: string; marcado: boolean }[]>([]);
   const [mostrarQR, setMostrarQR] = useState<boolean>(false);
+  const [busqueda, setBusqueda] = useState<string>("");
 
-  // Función para descargar el código QR como imagen
   const descargarQRCode = (carnet: string, index: number): void => {
     const svg = document.querySelectorAll("svg")[index];
     if (svg) {
@@ -33,7 +33,6 @@ const Home: React.FC = () => {
     }
   };
 
-  // Función para formatear el número de carnet
   const formatearCarnet = (carnet: string): string => {
     const carnetLimpio = carnet.trim();
     if (carnetLimpio.length >= 2) {
@@ -44,33 +43,43 @@ const Home: React.FC = () => {
     return carnetLimpio;
   };
 
-  // Función para generar los códigos QR
   const generarQRCode = (): void => {
     const carnetsList = texto
       .split(/[\n]/)
       .map(item => item.trim())
       .filter(item => item.length > 0 && /^\d+$/.test(item))
-      .map(formatearCarnet);
+      .map(formatearCarnet)
+      .map(carnet => ({ carnet, marcado: false }));
     
     setCarnets(carnetsList);
     setMostrarQR(true);
   };
 
-  // Función para procesar el texto pegado
   const procesarTextoPegado = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     e.preventDefault();
     const textoPegado = e.clipboardData.getData("text");
     setTexto(textoPegado);
   };
 
-  // Función para descargar todos los QR
   const descargarTodosQR = () => {
-    carnets.forEach((carnet, index) => {
+    carnets.forEach((item, index) => {
       setTimeout(() => {
-        descargarQRCode(carnet, index);
-      }, index * 500); // Añade un delay para evitar problemas con muchas descargas simultáneas
+        descargarQRCode(item.carnet, index);
+      }, index * 500);
     });
   };
+
+  const toggleMarcado = (index: number) => {
+    setCarnets(prev =>
+      prev.map((item, i) =>
+        i === index ? { ...item, marcado: !item.marcado } : item
+      )
+    );
+  };
+
+  const carnetsFiltrados = carnets.filter(item =>
+    item.carnet.replace(/-/g, "").includes(busqueda)
+  );
 
   return (
     <div className="container mx-auto p-4">
@@ -103,18 +112,44 @@ const Home: React.FC = () => {
         </div>
       </div>
 
+      {mostrarQR && (
+        <div className="w-full max-w-xl mb-8">
+          <input
+            type="text"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            placeholder="Buscar por 4 dígitos"
+            className="w-full p-4 border rounded-lg text-lg font-mono bg-black text-white"
+          />
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {mostrarQR && carnets.map((carnet, index) => (
-          <div key={index} className="flex flex-col items-center p-4 border rounded-lg bg-black">
-            <p className="text-white mb-2 font-mono text-2xl">{carnet}</p>
+        {mostrarQR && carnetsFiltrados.map((item, index) => (
+          <div
+            key={index}
+            className={`flex flex-col items-center p-4 border rounded-lg ${
+              item.marcado ? "bg-red-500" : "bg-black"
+            }`}
+          >
+            <p className="text-white mb-2 font-mono text-2xl">{item.carnet}</p>
             <QRCode
-              value={carnet}
+              value={item.carnet}
               size={100}
               level="H"
               style={{ backgroundColor: "white", padding: "10px" }}
             />
+            <div className="flex items-center mt-4">
+              <input
+                type="checkbox"
+                checked={item.marcado}
+                onChange={() => toggleMarcado(index)}
+                className="mr-2"
+              />
+              <span className="text-white">Marcar</span>
+            </div>
             <button
-              onClick={() => descargarQRCode(carnet, index)}
+              onClick={() => descargarQRCode(item.carnet, index)}
               className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
             >
               Descargar QR
